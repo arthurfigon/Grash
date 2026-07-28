@@ -1,0 +1,17 @@
+# Java
+target/
+*.log
+
+# Node
+node_modules/
+dist/
+
+# IDEs
+.idea/
+.vscode/
+
+# Env
+.env
+
+# Local idea folder the user requested to ignore
+Ideia/
