@@ -68,7 +68,8 @@ h1 {
   color: #a5a5ff;
 }
 
-.hint {
+.hint,
+.theme-hint {
   color: #9a9ab0;
   font-size: 0.9rem;
   margin: 0;

@@ -1,36 +1,304 @@
 .game {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 2rem;
-}
-
-canvas {
-  border-radius: 12px;
-  border: 1px solid #262838;
-  max-width: 100%;
-  height: auto;
-}
-
-.controls {
-  display: flex;
-  align-items: center;
   gap: 1rem;
 }
 
-.hint {
+header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.round-badge,
+.theme-badge {
+  font-size: 0.8rem;
   color: #9a9ab0;
-  font-size: 0.85rem;
-  margin: 0;
+  background: #1b1d29;
+  border: 1px solid #262838;
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
 }
 
 .disconnect-btn {
-  padding: 0.5rem 0.9rem;
+  margin-left: auto;
+  padding: 0.4rem 0.8rem;
   border-radius: 8px;
   border: 1px solid #ff6b6b55;
   background: transparent;
   color: #ff6b6b;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* A carta — retângulo com bordas suavizadas, verde (palavra) ou vermelho (impostor) */
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  border-radius: 20px;
+  background: #1e7d46;
+  box-shadow: 0 8px 24px #00000055;
+}
+
+.card.impostor {
+  background: #a02e2e;
+}
+
+.card-text {
+  color: #ffffff;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 1rem;
+}
+
+.scoreboard-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.score-chip {
+  font-size: 0.75rem;
+  color: #9a9ab0;
+  background: #1b1d29;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+}
+
+.score-chip.me {
+  color: #a5a5ff;
+  border: 1px solid #5b5bf055;
+}
+
+.turn-order {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.turn-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  background: #1b1d29;
+  border: 1px solid #262838;
   font-size: 0.85rem;
+  color: #cfcfe0;
+}
+
+.turn-chip.active {
+  border-color: #5b5bf0;
+  color: #ffffff;
+  box-shadow: 0 0 0 2px #5b5bf033;
+}
+
+.clue-dots {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #33334a;
+}
+
+.dot.filled {
+  background: #3ddc84;
+}
+
+.clue-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #14151f;
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.clue-feed p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #e8e8f0;
+}
+
+.clue-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.clue-form input {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #33334a;
+  background: #1b1d29;
+  color: #e8e8f0;
+  font-size: 1rem;
+}
+
+.clue-form button,
+.primary-btn {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #5b5bf0;
+  color: white;
+  font-weight: 600;
+}
+
+.vote-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vote-btn {
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #33334a;
+  background: #1b1d29;
+  color: #e8e8f0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.vote-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.guess-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.guess-form input {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #33334a;
+  background: #1b1d29;
+  color: #e8e8f0;
+  font-size: 1rem;
+}
+
+.guess-form button {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #5b5bf0;
+  color: white;
+  font-weight: 600;
+}
+
+.hint {
+  color: #9a9ab0;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.reveal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: #1b1d29;
+  border: 1px solid #262838;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.reveal-impostor {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #ff8080;
+}
+
+.reveal-word {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #cfcfe0;
+}
+
+.reveal-guess {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.reveal-guess.correct {
+  color: #3ddc84;
+}
+
+.reveal-guess.wrong {
+  color: #ffb84d;
+}
+
+.tally,
+.deltas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  color: #cfcfe0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.final-scoreboard {
+  max-width: 380px;
+  margin: 10vh auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  text-align: center;
+}
+
+.final-scoreboard h1 {
+  margin: 0;
+}
+
+.final-scoreboard ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.final-scoreboard li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  background: #1b1d29;
+  border: 1px solid #262838;
+}
+
+.final-scoreboard li.winner {
+  border-color: #ffb84d;
+  background: #ffb84d1a;
+}
+
+.final-scoreboard .name {
+  flex: 1;
+  text-align: left;
   font-weight: 600;
 }

@@ -1,4 +1,5 @@
 # Blueprint da Render para o Grash: backend (Docker) + frontend (site estático).
+# Sem banco de dados — o jogo é inteiramente em memória (ver ARCHITECTURE.md).
 # As URLs abaixo assumem os nomes de serviço exatos "grash-backend" e
 # "grash-frontend" (Render gera a URL pública como https://<nome>.onrender.com).
 # Se algum nome já estiver em uso e você precisar trocar, atualize as duas

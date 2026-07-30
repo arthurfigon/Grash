@@ -25,9 +25,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // /topic: broadcasts servidor -> clientes (estado de sala, estado de jogo)
-        registry.enableSimpleBroker("/topic");
+        // /topic: broadcasts servidor -> sala inteira (estado da sala, estado público da rodada)
+        // /queue: usado só junto com /user (abaixo) para a carta privada de cada jogador
+        registry.enableSimpleBroker("/topic", "/queue");
         // /app: prefixo para mensagens cliente -> @MessageMapping do servidor
         registry.setApplicationDestinationPrefixes("/app");
+        // /user: prefixo pra mensagens endereçadas a uma sessão específica (sem exigir login —
+        // ver GameService.sendPrivate, que usa o sessionId no lugar de um usuário autenticado)
+        registry.setUserDestinationPrefix("/user");
     }
 }

@@ -9,8 +9,9 @@ export class RoomApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/rooms`;
 
-  createRoom(nickname: string): Observable<RoomState> {
-    return this.http.post<RoomState>(this.baseUrl, { nickname });
+  /** @param theme null/vazio = sorteia um tema novo a cada rodada; senão, tema fixo pro jogo inteiro. */
+  createRoom(nickname: string, theme: string | null): Observable<RoomState> {
+    return this.http.post<RoomState>(this.baseUrl, { nickname, theme });
   }
 
   joinRoom(code: string, nickname: string): Observable<RoomState> {
@@ -19,5 +20,9 @@ export class RoomApiService {
 
   getRoom(code: string): Observable<RoomState> {
     return this.http.get<RoomState>(`${this.baseUrl}/${code}`);
+  }
+
+  listThemes(): Observable<string[]> {
+    return this.http.get<string[]>(`${environment.apiUrl}/themes`);
   }
 }

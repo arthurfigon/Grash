@@ -1,11 +1,20 @@
 # Grash
 
-Jogo multiplayer em tempo real — backend em Java 21 (Spring Boot) e frontend em Angular.
-Veja a arquitetura completa e as decisões tomadas em [`ARCHITECTURE.md`](ARCHITECTURE.md).
+O jogo do Impostor — backend em Java 21 (Spring Boot) e frontend em Angular, tudo em tempo
+real via WebSocket. Veja a arquitetura completa e as decisões de design em
+[`ARCHITECTURE.md`](ARCHITECTURE.md).
 
-Estado atual: MVP funcional — criar/entrar em sala por código, sala de espera com "pronto"
-e uma arena de movimento em tempo real (WASD/setas) sincronizada via WebSocket. Sem banco de
-dados (tudo em memória) e sem login (nickname temporário).
+Como funciona: crie uma sala (código de 6 caracteres, mínimo 3 jogadores) escolhendo um tema
+(ex.: League of Legends, Profissões, Animais...) ou "Aleatório" — se escolher um tema, ele vale
+pras 10 rodadas; se for "Aleatório", cada rodada sorteia um tema novo. Todos marcam "pronto" e
+o jogo sorteia a palavra da rodada: todos exceto o Impostor a recebem; o Impostor só sabe o
+tema. Em turnos, cada jogador dá 3 dicas sobre a palavra sem dizê-la — depois todos exceto o
+Impostor votam anonimamente em quem acha que é o Impostor, enquanto o Impostor tenta adivinhar
+a palavra secreta. Se o Impostor acerta, ganha um bônus e ninguém mais pontua na rodada; se
+erra, a pontuação normal da votação vale (voto certo pontua quem votou, voto errado pontua o
+Impostor). 10 rodadas ao todo, vence quem tiver mais pontos.
+
+Sem banco de dados, sem contas de usuário — tudo em memória, nickname temporário por sessão.
 
 ## Pré-requisitos
 
@@ -22,12 +31,15 @@ cd "c:\Users\arthu\Documents\Projetos\Game\Grash\backend"
 mvn spring-boot:run
 ```
 
-Sobe em `http://localhost:8080`. Endpoints:
+Sobe em `http://localhost:8080` (carrega o banco de palavras de `word-bank.json` na subida —
+sem banco de dados, sem configuração extra). Endpoints:
 
-- `POST /api/rooms` — cria sala `{ "nickname": "..." }`
+- `POST /api/rooms` — cria sala `{ "nickname": "...", "theme": "..." }` (`theme` opcional; nulo/vazio
+  ou tema desconhecido = sorteia um tema novo a cada rodada)
 - `POST /api/rooms/{code}/join` — entra em sala `{ "nickname": "..." }`
 - `GET  /api/rooms/{code}` — consulta estado da sala
-- `ws://localhost:8080/ws` — endpoint STOMP/SockJS (salas + jogo em tempo real)
+- `GET  /api/themes` — lista os temas disponíveis no banco de palavras
+- `ws://localhost:8080/ws` — endpoint STOMP/SockJS (sala, dicas, votos, palpite do Impostor, estado da rodada)
 
 ## Rodando o frontend
 
@@ -42,14 +54,15 @@ Sobe em `http://localhost:4200`. O backend precisa estar rodando (CORS já liber
 
 ## Testando localmente com múltiplos jogadores
 
-Abra `http://localhost:4200` em duas abas (ou uma normal + uma anônima, já que a sessão
-usa `sessionStorage` por aba): crie uma sala em uma aba, entre com o código gerado na outra,
-marque "pronto" nas duas e a arena de jogo abre automaticamente para ambas.
+Abra `http://localhost:4200` em 3+ abas (a sessão usa `sessionStorage` por aba, então cada
+uma é um jogador independente): crie uma sala numa aba, entre com o código nas outras, marque
+"pronto" em todas — o jogo começa automaticamente quando o mínimo de 3 jogadores estiver pronto.
 
 ## Deploy online (Render)
 
 O repositório já vem com tudo pronto pra publicar no [Render](https://render.com): backend
-como serviço Docker, frontend como site estático, conectados via `render.yaml` na raiz.
+como serviço Docker, frontend como site estático — sem banco de dados, `render.yaml` na raiz
+conecta os dois.
 
 ### Passo a passo (Blueprint — recomendado)
 
@@ -58,14 +71,14 @@ como serviço Docker, frontend como site estático, conectados via `render.yaml`
    lê o `render.yaml` da raiz e propõe os dois serviços automaticamente:
    - `grash-backend` (Docker, usa `backend/Dockerfile`)
    - `grash-frontend` (site estático, builda `frontend/` com `npm run build`)
-3. Clique em **Apply**. A primeira build do backend demora alguns minutos (baixa
-   dependências Maven do zero); o frontend é rápido.
+3. Clique em **Apply**. O backend demora alguns minutos na primeira build (baixa dependências
+   Maven do zero); o frontend é rápido.
 4. Quando os dois estiverem no ar, as URLs públicas serão
    `https://grash-backend.onrender.com` e `https://grash-frontend.onrender.com`
    (exatamente os nomes usados nas envVars do `render.yaml` — é assim que os dois se
    encontram: o front já builda apontando pro back, e o back já libera CORS pro front).
 
-> **Se o nome `grash-backend` ou `grash-frontend` já estiver em uso** (o subdomínio
+> **Se o nome `grash-backend`/`grash-frontend` já estiver em uso** (o subdomínio
 > `.onrender.com` é global), a Render vai pedir outro nome. Nesse caso, edite o
 > `render.yaml`: troque o nome do serviço e ajuste as `envVars` do *outro* serviço pra
 > apontar pra URL nova (`GRASH_CORS_ALLOWED_ORIGINS` no backend, `API_URL`/`WS_URL` no
@@ -76,9 +89,9 @@ como serviço Docker, frontend como site estático, conectados via `render.yaml`
 Se preferir não usar o Blueprint (ou usar outra plataforma tipo Railway/Fly.io, que também
 leem Dockerfile):
 
-- **Backend**: serviço Docker, root `backend/`, Dockerfile em `backend/Dockerfile`. Defina a
-  env var `GRASH_CORS_ALLOWED_ORIGINS` com a URL pública do frontend (pode ter mais de uma,
-  separadas por vírgula). `PORT` é injetada automaticamente pela plataforma.
+- **Backend**: serviço Docker, root `backend/`, Dockerfile em `backend/Dockerfile`. Defina
+  `GRASH_CORS_ALLOWED_ORIGINS` com a URL pública do frontend (pode ter mais de uma, separadas
+  por vírgula). `PORT` é injetada automaticamente pela plataforma.
 - **Frontend**: site estático, root `frontend/`, build command `npm install && npm run build`,
   publish directory `dist/grash-frontend/browser`. Defina `API_URL` e `WS_URL` apontando pra
   URL pública do backend (ex.: `https://seu-backend.onrender.com/api` e `.../ws`) — o script
@@ -87,6 +100,5 @@ leem Dockerfile):
 
 ### Limitação a saber
 
-O estado das salas ainda vive em memória (ver `ARCHITECTURE.md`) — reiniciar o serviço do
-backend (deploy novo, restart, ou o plano free "dormindo" por inatividade) apaga as salas
-ativas. Suficiente para mostrar o MVP; migrar pra Redis é o próximo passo se isso incomodar.
+Tudo (salas, jogadores, rodadas) vive em memória — reiniciar o backend (deploy novo, restart,
+ou o plano free "dormindo" por inatividade) apaga as salas ativas. Ver `ARCHITECTURE.md`.

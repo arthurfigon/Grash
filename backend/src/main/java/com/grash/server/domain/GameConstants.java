@@ -1,17 +1,20 @@
 package com.grash.server.domain;
 
 /**
- * Parâmetros da arena de jogo. Espelhados no frontend (game.constants.ts)
- * para o canvas renderizar no mesmo espaço de coordenadas do servidor.
- * O servidor é autoritativo: o cliente só envia input, nunca posição.
+ * Parâmetros do jogo do Impostor.
  */
 public final class GameConstants {
 
-    public static final int ARENA_WIDTH = 800;
-    public static final int ARENA_HEIGHT = 600;
-    public static final double PLAYER_RADIUS = 16;
-    public static final double PLAYER_SPEED_PER_SECOND = 260;
-    public static final int TICK_RATE_MS = 50; // 20 ticks/segundo
+    public static final int TOTAL_ROUNDS = 10;
+    public static final int CLUE_LAPS_PER_ROUND = 3;
+    /** Pausa (segundos) na fase de revelação antes de começar a próxima rodada automaticamente. */
+    public static final int REVEAL_DURATION_SECONDS = 8;
+
+    public static final int CORRECT_VOTE_POINTS = 1;
+    /** Pontos que o impostor ganha pra CADA jogador que vota errado. */
+    public static final int WRONG_VOTE_IMPOSTOR_POINTS = 2;
+    /** Bônus extra se o impostor acertar a palavra da rodada no palpite final. */
+    public static final int IMPOSTOR_CORRECT_GUESS_BONUS = 3;
 
     private GameConstants() {
     }

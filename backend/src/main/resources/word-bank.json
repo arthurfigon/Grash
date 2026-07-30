@@ -1,0 +1,82 @@
+{
+  "League of Legends": [
+    "Aatrox", "Ahri", "Akali", "Alistar", "Amumu", "Anivia", "Annie", "Ashe", "Aurelion Sol", "Azir",
+    "Bard", "Blitzcrank", "Brand", "Braum", "Caitlyn", "Camille", "Cassiopeia", "Cho'Gath", "Corki", "Darius",
+    "Diana", "Dr. Mundo", "Draven", "Ekko", "Elise", "Evelynn", "Ezreal", "Fiddlesticks", "Fiora", "Fizz",
+    "Galio", "Gangplank", "Garen", "Gnar", "Gragas", "Graves", "Gwen", "Hecarim", "Heimerdinger", "Illaoi",
+    "Irelia", "Ivern", "Janna", "Jarvan IV", "Jax", "Jayce", "Jhin", "Jinx", "Kai'Sa", "Kalista",
+    "Karma", "Karthus", "Kassadin", "Katarina", "Kayle", "Kayn", "Kennen", "Kha'Zix", "Kindred", "Kled",
+    "Kog'Maw", "LeBlanc", "Lee Sin", "Leona", "Lillia", "Lissandra", "Lucian", "Lulu", "Lux", "Malphite",
+    "Malzahar", "Maokai", "Master Yi", "Miss Fortune", "Mordekaiser", "Morgana", "Nami", "Nasus", "Nautilus", "Neeko",
+    "Nidalee", "Nocturne", "Nunu & Willump", "Olaf", "Orianna", "Ornn", "Pantheon", "Poppy", "Pyke", "Qiyana",
+    "Quinn", "Rakan", "Rammus", "Rek'Sai", "Rell", "Renekton", "Rengar", "Riven", "Rumble", "Ryze",
+    "Samira", "Sejuani", "Senna", "Seraphine", "Sett", "Shaco", "Shen", "Shyvana", "Singed", "Sion",
+    "Sivir", "Skarner", "Sona", "Soraka", "Swain", "Sylas", "Syndra", "Tahm Kench", "Taliyah", "Talon",
+    "Taric", "Teemo", "Thresh", "Tristana", "Trundle", "Tryndamere", "Twisted Fate", "Twitch", "Udyr", "Urgot",
+    "Varus", "Vayne", "Veigar", "Vex", "Vi", "Viego", "Viktor", "Vladimir", "Volibear", "Warwick",
+    "Wukong", "Xayah", "Xerath", "Xin Zhao", "Yasuo", "Yone", "Yorick", "Yuumi", "Zac", "Zed",
+    "Zeri", "Ziggs", "Zilean", "Zoe", "Zyra"
+  ],
+  "Profissões": [
+    "Médico", "Enfermeiro", "Dentista", "Veterinário", "Professor", "Advogado", "Juiz", "Engenheiro", "Arquiteto", "Contador",
+    "Programador", "Cientista", "Biólogo", "Químico", "Físico", "Matemático", "Psicólogo", "Fisioterapeuta", "Nutricionista", "Farmacêutico",
+    "Bombeiro", "Policial", "Soldado", "Piloto de Avião", "Comissário de Bordo", "Astronauta", "Motorista", "Taxista", "Cozinheiro", "Padeiro",
+    "Açougueiro", "Garçom", "Barman", "Cabeleireiro", "Manicure", "Maquiador", "Estilista", "Costureiro", "Sapateiro", "Eletricista",
+    "Encanador", "Pedreiro", "Carpinteiro", "Marceneiro", "Mecânico", "Jornalista", "Fotógrafo", "Escritor", "Tradutor", "Bibliotecário",
+    "Ator", "Cantor", "Músico", "Dançarino", "Pintor", "Escultor", "Designer Gráfico", "Youtuber", "Jogador de Futebol", "Treinador",
+    "Personal Trainer", "Massagista", "Segurança", "Zelador", "Faxineiro", "Jardineiro", "Pescador", "Agricultor", "Pastor", "Padre",
+    "Diplomata", "Historiador", "Geógrafo", "Sociólogo", "Economista", "Vendedor", "Recepcionista", "Secretário", "Guia Turístico"
+  ],
+  "Animais": [
+    "Leão", "Tigre", "Elefante", "Girafa", "Zebra", "Macaco", "Gorila", "Urso", "Lobo", "Raposa",
+    "Coelho", "Esquilo", "Cavalo", "Vaca", "Porco", "Ovelha", "Cabra", "Galinha", "Pato", "Ganso",
+    "Cachorro", "Gato", "Hamster", "Rato", "Cobra", "Lagarto", "Crocodilo", "Jacaré", "Tartaruga", "Sapo",
+    "Rã", "Peixe", "Tubarão", "Baleia", "Golfinho", "Polvo", "Águia", "Coruja", "Pinguim", "Flamingo",
+    "Papagaio", "Beija-flor", "Abelha", "Borboleta", "Aranha", "Formiga", "Escorpião", "Camelo", "Rinoceronte", "Hipopótamo",
+    "Panda", "Coala", "Canguru", "Ouriço", "Morcego", "Foca", "Leão-marinho", "Tucano", "Arara", "Onça",
+    "Jaguatirica", "Preguiça", "Tatu", "Capivara", "Lhama", "Alpaca", "Bisão", "Búfalo", "Hiena", "Chita",
+    "Leopardo", "Puma", "Lince"
+  ],
+  "Frutas": [
+    "Maçã", "Banana", "Laranja", "Uva", "Morango", "Abacaxi", "Manga", "Melancia", "Melão", "Pêra",
+    "Pêssego", "Ameixa", "Kiwi", "Limão", "Mamão", "Maracujá", "Goiaba", "Caju", "Coco", "Abacate",
+    "Cereja", "Framboesa", "Amora", "Mirtilo", "Tangerina", "Carambola", "Jabuticaba", "Graviola", "Lichia", "Romã",
+    "Figo", "Tâmara", "Nectarina", "Damasco", "Pitaya", "Jaca", "Acerola", "Physalis", "Nêspera", "Caqui",
+    "Pomelo", "Cupuaçu", "Açaí", "Cajá", "Umbu", "Pinha", "Sapoti", "Longan", "Rambutan", "Mangostão",
+    "Durian", "Grapefruit", "Groselha", "Fruta-do-conde", "Pequi", "Buriti", "Bacuri"
+  ],
+  "Países": [
+    "Brasil", "Argentina", "Chile", "Uruguai", "Paraguai", "Bolívia", "Peru", "Colômbia", "Venezuela", "Equador",
+    "México", "Estados Unidos", "Canadá", "Cuba", "Portugal", "Espanha", "França", "Itália", "Alemanha", "Inglaterra",
+    "Escócia", "Irlanda", "Holanda", "Bélgica", "Suíça", "Áustria", "Suécia", "Noruega", "Dinamarca", "Finlândia",
+    "Islândia", "Polônia", "Rússia", "Ucrânia", "Grécia", "Turquia", "Egito", "Marrocos", "África do Sul", "Nigéria",
+    "Quênia", "China", "Japão", "Coreia do Sul", "Índia", "Tailândia", "Vietnã", "Indonésia", "Filipinas", "Austrália",
+    "Nova Zelândia", "Israel", "Arábia Saudita", "Emirados Árabes Unidos", "Irã", "Iraque", "Croácia", "Sérvia", "Hungria", "República Tcheca",
+    "Romênia", "Bulgária"
+  ],
+  "Esportes": [
+    "Futebol", "Basquete", "Vôlei", "Tênis", "Natação", "Atletismo", "Ciclismo", "Boxe", "Judô", "Karatê",
+    "Taekwondo", "Ginástica", "Surf", "Skate", "Handebol", "Rugby", "Golfe", "Beisebol", "Hóquei", "Xadrez",
+    "Sinuca", "Boliche", "Badminton", "Squash", "Esgrima", "Remo", "Vela", "Triatlo", "Maratona", "Fisiculturismo",
+    "Luta Livre", "MMA", "Halterofilismo", "Patinação", "Escalada", "Paraquedismo", "Motociclismo", "Automobilismo", "Polo Aquático", "Tênis de Mesa",
+    "Capoeira", "Futsal", "Vôlei de Praia", "Curling", "Snowboard", "Esqui", "Patinação Artística", "Nado Sincronizado", "Salto Ornamental", "Tiro com Arco",
+    "Tiro Esportivo", "Pentatlo", "Ciclismo BMX", "Basquete de Rua", "Peteca"
+  ],
+  "Instrumentos Musicais": [
+    "Violão", "Guitarra", "Baixo", "Piano", "Teclado", "Bateria", "Violino", "Viola", "Violoncelo", "Contrabaixo",
+    "Flauta", "Flauta Doce", "Saxofone", "Trompete", "Trombone", "Tuba", "Clarinete", "Oboé", "Fagote", "Harpa",
+    "Acordeão", "Gaita", "Pandeiro", "Tamborim", "Cavaquinho", "Ukulele", "Banjo", "Bandolim", "Berimbau", "Cajón",
+    "Congas", "Bongô", "Xilofone", "Marimba", "Sino", "Triângulo", "Chocalho", "Reco-reco", "Agogô", "Cuíca",
+    "Surdo", "Caixa", "Prato", "Órgão", "Sintetizador", "Trompa", "Corneta", "Bumbo", "Djembe", "Rabeca",
+    "Cítara", "Sitar", "Balalaica", "Didgeridoo", "Gaita de Foles", "Realejo", "Celesta"
+  ],
+  "Objetos do Dia a Dia": [
+    "Geladeira", "Fogão", "Micro-ondas", "Sofá", "Cama", "Mesa", "Cadeira", "Armário", "Espelho", "Travesseiro",
+    "Cobertor", "Toalha", "Escova de Dente", "Sabonete", "Shampoo", "Guarda-chuva", "Óculos", "Relógio", "Celular", "Computador",
+    "Televisão", "Controle Remoto", "Chave", "Carteira", "Mochila", "Bolsa", "Sapato", "Chinelo", "Boné", "Chapéu",
+    "Cinto", "Cachecol", "Luva", "Meia", "Camiseta", "Calça", "Vestido", "Panela", "Frigideira", "Faca",
+    "Garfo", "Colher", "Prato", "Copo", "Xícara", "Garrafa", "Tesoura", "Caneta", "Lápis", "Caderno",
+    "Livro", "Mala", "Escada", "Vassoura", "Balde", "Ventilador", "Lâmpada", "Tomada", "Extensão", "Pilha",
+    "Fone de Ouvido", "Carregador"
+  ]
+}

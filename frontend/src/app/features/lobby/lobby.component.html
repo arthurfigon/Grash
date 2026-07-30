@@ -1,6 +1,6 @@
 <div class="lobby">
   <h1>Grash</h1>
-  <p class="subtitle">Crie uma sala ou entre com um código para jogar em tempo real.</p>
+  <p class="subtitle">O jogo do Impostor — crie uma sala ou entre com um código (mínimo 3 jogadores).</p>
 
   <label>
     Nickname
@@ -11,6 +11,16 @@
       maxlength="20"
       placeholder="Como quer ser chamado?"
     />
+  </label>
+
+  <label>
+    Tema (só pra criar sala)
+    <select [ngModel]="selectedTheme()" (ngModelChange)="selectedTheme.set($event)">
+      <option value="">Aleatório</option>
+      @for (theme of themes(); track theme) {
+        <option [value]="theme">{{ theme }}</option>
+      }
+    </select>
   </label>
 
   @if (error()) {

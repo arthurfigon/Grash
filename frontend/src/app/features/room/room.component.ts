@@ -24,7 +24,8 @@ export class RoomComponent implements OnInit, OnDestroy {
   readonly room = this.gameSocket.roomState;
   readonly myPlayer = computed(() => this.room()?.players.find((p) => p.id === this.playerId) ?? null);
   readonly isReady = computed(() => this.myPlayer()?.status === 'READY');
-  readonly canStart = computed(() => (this.room()?.players.length ?? 0) >= 2);
+  readonly minPlayers = 3;
+  readonly canStart = computed(() => (this.room()?.players.length ?? 0) >= this.minPlayers);
 
   constructor() {
     effect(() => {

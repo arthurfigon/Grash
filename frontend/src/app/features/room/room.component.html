@@ -5,6 +5,8 @@
       <button class="copy" (click)="copyCode()">Copiar código</button>
     </header>
 
+    <p class="theme-hint">Tema: {{ r.fixedTheme ?? 'Aleatório a cada rodada' }}</p>
+
     <ul class="players">
       @for (player of r.players; track player.id) {
         <li [class.ready]="player.status === 'READY'">
@@ -18,7 +20,7 @@
     </ul>
 
     @if (!canStart()) {
-      <p class="hint">Aguardando pelo menos mais um jogador entrar com o código acima.</p>
+      <p class="hint">Precisa de pelo menos {{ minPlayers }} jogadores — compartilhe o código acima.</p>
     }
 
     <button class="ready-btn" [class.active]="isReady()" (click)="toggleReady()">

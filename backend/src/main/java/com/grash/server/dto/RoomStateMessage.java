@@ -14,6 +14,8 @@ public record RoomStateMessage(
         String code,
         String status,
         String ownerId,
+        /** Tema fixo escolhido na criação da sala; null = sorteia um tema novo a cada rodada. */
+        String fixedTheme,
         List<PlayerDto> players,
         String requestingPlayerId
 ) {
@@ -29,6 +31,7 @@ public record RoomStateMessage(
                 room.getCode(),
                 room.getStatus().name(),
                 room.getOwnerId(),
+                room.getFixedTheme(),
                 players,
                 requestingPlayerId
         );

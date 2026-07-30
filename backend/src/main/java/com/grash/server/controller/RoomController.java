@@ -27,7 +27,7 @@ public class RoomController {
 
     @PostMapping
     public ResponseEntity<RoomStateMessage> createRoom(@Valid @RequestBody CreateRoomRequest request) {
-        Room room = roomService.createRoom(request.nickname());
+        Room room = roomService.createRoom(request.nickname(), request.theme());
         String playerId = room.getOwnerId();
         return ResponseEntity.ok(RoomStateMessage.of(room, playerId));
     }

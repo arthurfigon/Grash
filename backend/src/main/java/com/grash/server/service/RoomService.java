@@ -1,6 +1,5 @@
 package com.grash.server.service;
 
-import com.grash.server.domain.GameConstants;
 import com.grash.server.domain.Player;
 import com.grash.server.domain.PlayerStatus;
 import com.grash.server.domain.Room;
@@ -17,9 +16,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Estado de todas as salas ativas, mantido em memória (sem banco no MVP —
- * ver ARCHITECTURE.md). Uma única instância do backend é assumida; escalar
- * horizontalmente exigiria mover esse estado para Redis (Fase 3 do roadmap).
+ * Estado de todas as salas ativas, em memória (sem banco — ver
+ * ARCHITECTURE.md). Uma única instância do backend é assumida; escalar
+ * horizontalmente exigiria mover esse estado para Redis.
  */
 @Service
 public class RoomService {
@@ -30,13 +29,23 @@ public class RoomService {
     private final SecureRandom random = new SecureRandom();
     private final Map<String, Room> roomsById = new ConcurrentHashMap<>();
     private final Map<String, String> roomIdByCode = new ConcurrentHashMap<>();
+    private final WordBankService wordBankService;
 
-    public Room createRoom(String nickname) {
+    public RoomService(WordBankService wordBankService) {
+        this.wordBankService = wordBankService;
+    }
+
+    /**
+     * @param theme tema fixo escolhido pelo dono pra todas as rodadas; null/vazio
+     *              ou um tema desconhecido = sorteia um tema novo a cada rodada.
+     */
+    public Room createRoom(String nickname, String theme) {
         String roomId = UUID.randomUUID().toString();
         String code = generateUniqueCode();
         Player owner = new Player(UUID.randomUUID().toString(), nickname.trim());
 
-        Room room = new Room(roomId, code, owner.getId());
+        String fixedTheme = (theme != null && wordBankService.isKnownTheme(theme)) ? theme : null;
+        Room room = new Room(roomId, code, owner.getId(), fixedTheme);
         room.addPlayer(owner);
 
         roomsById.put(roomId, room);
@@ -81,9 +90,9 @@ public class RoomService {
 
     /**
      * Marca o jogador como pronto/não pronto. Se todos ficarem prontos
-     * (mínimo 2 jogadores), a sala transiciona para IN_PROGRESS e as
-     * posições iniciais são sorteadas — a partir daí o GameLoopService
-     * assume o tick da sala.
+     * (mínimo {@link Room#MIN_PLAYERS}), a sala vira IN_PROGRESS — quem
+     * chamou isso (RoomWebSocketController) é responsável por então acionar
+     * o GameService pra sortear a primeira rodada.
      */
     public Room setReady(String roomId, String playerId, boolean ready) {
         Room room = getRoomById(roomId);
@@ -91,21 +100,9 @@ public class RoomService {
         player.setStatus(ready ? PlayerStatus.READY : PlayerStatus.WAITING);
 
         if (room.getStatus() == RoomStatus.WAITING && room.allReady()) {
-            startGame(room);
+            room.setStatus(RoomStatus.IN_PROGRESS);
         }
         return room;
-    }
-
-    private void startGame(Room room) {
-        room.setStatus(RoomStatus.IN_PROGRESS);
-        for (Player player : room.getPlayers()) {
-            player.setStatus(PlayerStatus.PLAYING);
-            double x = GameConstants.PLAYER_RADIUS
-                    + random.nextDouble() * (GameConstants.ARENA_WIDTH - 2 * GameConstants.PLAYER_RADIUS);
-            double y = GameConstants.PLAYER_RADIUS
-                    + random.nextDouble() * (GameConstants.ARENA_HEIGHT - 2 * GameConstants.PLAYER_RADIUS);
-            player.setPosition(x, y);
-        }
     }
 
     /**
@@ -124,22 +121,8 @@ public class RoomService {
         }
     }
 
-    public void applyInput(String roomId, String playerId, boolean up, boolean down, boolean left, boolean right) {
-        Room room = roomsById.get(roomId);
-        if (room == null) {
-            return;
-        }
-        Player player = room.getPlayer(playerId);
-        if (player == null) {
-            return;
-        }
-        player.setInput(up, down, left, right);
-    }
-
-    public Collection<Room> getActiveGameRooms() {
-        return roomsById.values().stream()
-                .filter(room -> room.getStatus() == RoomStatus.IN_PROGRESS)
-                .toList();
+    public Collection<Room> getAllRooms() {
+        return roomsById.values();
     }
 
     private String generateUniqueCode() {

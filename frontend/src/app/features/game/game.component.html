@@ -1,7 +1,145 @@
 <div class="game">
-  <canvas #canvas [width]="arenaWidth" [height]="arenaHeight"></canvas>
-  <div class="controls">
-    <p class="hint">WASD ou setas para mover</p>
-    <button class="disconnect-btn" (click)="disconnect()">Desconectar</button>
-  </div>
+  @if (gameOver()) {
+    <div class="final-scoreboard">
+      <h1>Fim de jogo!</h1>
+      <ol>
+        @for (p of rankedPlayers(); track p.id) {
+          <li [class.winner]="p.score === topScore()">
+            <span class="name">{{ p.nickname }}</span>
+            <span class="points">{{ p.score }} pt(s)</span>
+            @if (p.score === topScore()) {
+              <span class="crown">🏆</span>
+            }
+          </li>
+        }
+      </ol>
+      <button class="primary-btn" (click)="leaveToLobby()">Voltar ao lobby</button>
+    </div>
+  } @else if (game()) {
+    @let g = game()!;
+    <header>
+      <span class="round-badge">Rodada {{ g.round }} / {{ g.totalRounds }}</span>
+      <span class="theme-badge">Tema: {{ g.theme }}</span>
+      <button class="disconnect-btn" (click)="leaveToLobby()">Desconectar</button>
+    </header>
+
+    @if (myCard(); as card) {
+      <div class="card" [class.impostor]="card.impostor">
+        <span class="card-text">{{ card.impostor ? 'Impostor' : card.word }}</span>
+      </div>
+    }
+
+    <div class="scoreboard-mini">
+      @for (p of rankedPlayers(); track p.id) {
+        <span class="score-chip" [class.me]="p.id === playerId">{{ p.nickname }}: {{ p.score }}</span>
+      }
+    </div>
+
+    @switch (g.phase) {
+      @case ('CLUE_GIVING') {
+        <div class="turn-order">
+          @for (pid of g.turnOrder; track pid) {
+            <div class="turn-chip" [class.active]="pid === g.currentTurnPlayerId">
+              {{ nicknameOf(pid) }}
+              <span class="clue-dots">
+                @for (clue of cluesFor(pid); track $index) {
+                  <span class="dot filled"></span>
+                }
+              </span>
+            </div>
+          }
+        </div>
+
+        <div class="clue-feed">
+          @for (clue of g.clues; track $index) {
+            <p><strong>{{ nicknameOf(clue.playerId) }}</strong> (dica {{ clue.lap }}): {{ clue.text }}</p>
+          } @empty {
+            <p class="hint">Ainda sem dicas nessa rodada.</p>
+          }
+        </div>
+
+        @if (isMyTurn()) {
+          <form class="clue-form" (ngSubmit)="submitClue()">
+            <input
+              type="text"
+              [ngModel]="clueText()"
+              (ngModelChange)="clueText.set($event)"
+              name="clue"
+              maxlength="200"
+              placeholder="Sua dica..."
+              autocomplete="off"
+            />
+            <button type="submit">Enviar</button>
+          </form>
+        } @else {
+          <p class="hint">Aguardando a dica de <strong>{{ nicknameOf(g.currentTurnPlayerId) }}</strong>...</p>
+        }
+      }
+      @case ('VOTING') {
+        @if (isImpostor()) {
+          <p class="hint">Você é o Impostor! Tente adivinhar a palavra da rodada.</p>
+          @if (hasGuessed()) {
+            <p class="hint">Palpite enviado — aguardando a votação dos outros jogadores...</p>
+          } @else {
+            <form class="guess-form" (ngSubmit)="submitGuess()">
+              <input
+                type="text"
+                [ngModel]="guessText()"
+                (ngModelChange)="guessText.set($event)"
+                name="guess"
+                maxlength="200"
+                placeholder="Qual é a palavra?"
+                autocomplete="off"
+              />
+              <button type="submit">Enviar palpite</button>
+            </form>
+          }
+        } @else {
+          <p class="hint">Quem você acha que é o Impostor?</p>
+          <div class="vote-options">
+            @for (p of voteCandidates(); track p.id) {
+              <button class="vote-btn" [disabled]="hasVoted()" (click)="vote(p.id)">{{ p.nickname }}</button>
+            }
+          </div>
+          @if (hasVoted()) {
+            <p class="hint">Voto registrado — aguardando os outros ({{ g.votedPlayerIds.length }}/{{ players().length - 1 }})</p>
+          }
+        }
+      }
+      @case ('REVEAL') {
+        <div class="reveal">
+          <p class="reveal-impostor">O impostor era <strong>{{ nicknameOf(g.impostorId) }}</strong>!</p>
+          <p class="reveal-word">A palavra da rodada era <strong>{{ g.secretWord }}</strong>.</p>
+
+          @if (g.impostorGuessedCorrectly) {
+            <p class="reveal-guess correct">{{ nicknameOf(g.impostorId) }} acertou a palavra!</p>
+          } @else {
+            <p class="reveal-guess wrong">{{ nicknameOf(g.impostorId) }} chutou: {{ g.impostorGuess }}</p>
+          }
+
+          <ul class="tally">
+            @for (p of players(); track p.id) {
+              @if (g.voteTally[p.id]) {
+                <li>{{ p.nickname }}: {{ g.voteTally[p.id] }} voto(s)</li>
+              }
+            }
+          </ul>
+
+          <ul class="deltas">
+            @for (p of players(); track p.id) {
+              @if (g.scoreDeltas[p.id]) {
+                <li>{{ p.nickname }} +{{ g.scoreDeltas[p.id] }} ponto(s)</li>
+              }
+            }
+          </ul>
+
+          <p class="hint">
+            {{ g.round < g.totalRounds ? 'Próxima rodada em instantes...' : 'Calculando resultado final...' }}
+          </p>
+        </div>
+      }
+    }
+  } @else {
+    <p>Conectando à rodada...</p>
+  }
 </div>

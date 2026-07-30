@@ -5,24 +5,34 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Sala em memória. Todo o estado de uma partida vive aqui enquanto o
- * servidor roda — nada é persistido (ver decisão em ARCHITECTURE.md: sem
- * banco no MVP). Se o processo reiniciar, todas as salas somem.
+ * Sala em memória — todo o estado (jogadores, rodada atual) vive aqui
+ * enquanto o processo roda. Sem banco de dados (ver ARCHITECTURE.md):
+ * reiniciar o servidor apaga as salas ativas, decisão deliberada pra manter
+ * o projeto simples.
  */
 public class Room {
 
+    public static final int MIN_PLAYERS = 3;
     public static final int MAX_PLAYERS = 8;
 
     private final String id;
     private final String code;
     private final String ownerId;
+    /** Tema fixo escolhido pelo dono ao criar a sala; null = sorteia um tema novo a cada rodada. */
+    private final String fixedTheme;
     private final Map<String, Player> players = new ConcurrentHashMap<>();
     private volatile RoomStatus status = RoomStatus.WAITING;
+    private volatile RoundState currentRound;
 
-    public Room(String id, String code, String ownerId) {
+    public Room(String id, String code, String ownerId, String fixedTheme) {
         this.id = id;
         this.code = code;
         this.ownerId = ownerId;
+        this.fixedTheme = fixedTheme;
+    }
+
+    public String getFixedTheme() {
+        return fixedTheme;
     }
 
     public String getId() {
@@ -43,6 +53,14 @@ public class Room {
 
     public void setStatus(RoomStatus status) {
         this.status = status;
+    }
+
+    public RoundState getCurrentRound() {
+        return currentRound;
+    }
+
+    public void setCurrentRound(RoundState currentRound) {
+        this.currentRound = currentRound;
     }
 
     public boolean isFull() {
@@ -70,7 +88,7 @@ public class Room {
     }
 
     public boolean allReady() {
-        if (players.size() < 2) {
+        if (players.size() < MIN_PLAYERS) {
             return false;
         }
         return players.values().stream().allMatch(p -> p.getStatus() == PlayerStatus.READY);

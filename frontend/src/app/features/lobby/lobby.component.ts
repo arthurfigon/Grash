@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { RoomApiService } from '../../core/services/room-api.service';
@@ -11,7 +11,7 @@ import { PlayerSessionService } from '../../core/services/player-session.service
   templateUrl: './lobby.component.html',
   styleUrl: './lobby.component.css',
 })
-export class LobbyComponent {
+export class LobbyComponent implements OnInit {
   private readonly roomApi = inject(RoomApiService);
   private readonly session = inject(PlayerSessionService);
   private readonly router = inject(Router);
@@ -20,13 +20,24 @@ export class LobbyComponent {
   readonly roomCode = signal('');
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly themes = signal<string[]>([]);
+  /** '' = Aleatório (sorteia um tema novo a cada rodada). */
+  readonly selectedTheme = signal('');
+
+  ngOnInit(): void {
+    this.roomApi.listThemes().subscribe({
+      next: (themes) => this.themes.set(themes),
+      error: () => this.themes.set([]),
+    });
+  }
 
   createRoom(): void {
     if (!this.validateNickname()) {
       return;
     }
     this.loading.set(true);
-    this.roomApi.createRoom(this.nickname().trim()).subscribe({
+    const theme = this.selectedTheme() || null;
+    this.roomApi.createRoom(this.nickname().trim(), theme).subscribe({
       next: (room) => this.enterRoom(room.code, room.requestingPlayerId!),
       error: (err) => this.handleError(err),
     });

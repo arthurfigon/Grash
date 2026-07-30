@@ -1,222 +1,297 @@
 # Grash — Arquitetura do Projeto
 
-> **Status:** Fase 1 (MVP) implementada — salas privadas por código, lobby,
-> sala de espera com "pronto" e uma tela de jogo em tempo real funcional
-> (jogadores se movem em uma arena 2D, sincronizados via WebSocket). Ver
-> seção 11 para as decisões que destravaram essa implementação e `README.md`
-> para como rodar.
+> **Status:** MVP jogável de ponta a ponta — o jogo do Impostor completo (10
+> rodadas, tema fixo ou aleatório, dicas em turno, votação anônima sem o
+> Impostor, palpite do Impostor sobre a palavra, revelação e pontuação),
+> testado com múltiplos jogadores reais via navegador. Sem banco de dados,
+> sem contas — tudo em memória, nickname temporário por sessão.
 
 ---
 
 ## 1. Visão Geral
 
-Grash é um jogo multiplayer online: jogadores se conectam, criam ou entram em **salas**, e jogam entre si em tempo real.
+Grash é o jogo do Impostor (mesma família de "Palavra Impostora"/"Word
+Wolf"/"Spyfall"): jogadores entram numa sala, e a cada rodada todos exceto
+um (o Impostor) recebem a mesma palavra secreta de um tema (ex.: um campeão
+de League of Legends, uma profissão, um animal). O Impostor não sabe a
+palavra — só o tema. Todos dão dicas em turno sobre a palavra sem dizê-la
+diretamente; ao final, todos exceto o Impostor votam em quem acham que é
+o Impostor, e o Impostor tenta adivinhar a palavra secreta.
 
-- **Backend**: Java 21 + Spring Boot 3
+Quem cria a sala escolhe o tema (fixo pras 10 rodadas) ou deixa "Aleatório"
+(sorteia um tema novo a cada rodada).
+
+- **Backend**: Java 21 + Spring Boot 3 — tudo em memória, sem banco de dados
 - **Frontend**: Angular (standalone components, sem NgModules)
-- **Comunicação em tempo real**: WebSocket (STOMP sobre SockJS/WebSocket nativo)
-- **Estratégia de repositório**: monorepo único chamado `Grash`, com `backend/` e `frontend/` como projetos independentes (cada um com seu próprio build)
+- **Comunicação em tempo real**: WebSocket (STOMP sobre SockJS)
+- **Repositório**: monorepo único (`Grash`), com `backend/` e `frontend/` como projetos independentes
 
 ---
 
-## 2. Mono-repo vs. Multi-repo
-
-| Critério | Mono-repo (recomendado agora) | Multi-repo |
-|---|---|---|
-| Times pequenos / solo dev | ✅ mais simples de gerenciar | ❌ overhead de sincronizar 2 repos |
-| Deploys independentes | ✅ possível (pastas isoladas + CI por path) | ✅ nativo |
-| Versionamento conjunto de contrato API | ✅ PRs atômicos (back+front juntos) | ❌ precisa coordenar 2 PRs |
-| Escala para múltiplos times | ❌ fica pesado | ✅ melhor |
-
-**Recomendação**: começar com **monorepo** (`Grash`). Se o projeto crescer e times/deploys se separarem, é trivial extrair `backend/` e `frontend/` para repositórios próprios depois (histórico preservável com `git subtree split`).
-
----
-
-## 3. Estrutura de Pastas
+## 2. Estrutura de Pastas
 
 ```
 Grash/
 ├── README.md
 ├── ARCHITECTURE.md
-├── .gitignore
-├── docs/
-│   └── (diagramas, ADRs, decisões futuras)
-│
-├── backend/                          # grash-server (Java 21 / Spring Boot 3)
+├── render.yaml                        # Blueprint de deploy (Render)
+├── backend/                           # grash-server (Java 21 / Spring Boot 3)
 │   ├── pom.xml
+│   ├── Dockerfile
 │   ├── src/main/java/com/grash/server/
 │   │   ├── GrashServerApplication.java
-│   │   ├── config/                   # CORS, WebSocket, Security, Beans
-│   │   ├── controller/                # REST (auth, salas, perfil)
-│   │   ├── websocket/                 # handlers/controllers STOMP (eventos de jogo)
-│   │   ├── service/                   # regras de negócio (RoomService, GameService)
-│   │   ├── domain/                    # entidades (Player, Room, GameSession)
-│   │   ├── dto/                       # objetos de transporte (Request/Response)
-│   │   ├── repository/                # persistência (Spring Data JPA)
+│   │   ├── config/                    # CORS, WebSocket
+│   │   ├── controller/                # REST (salas, temas)
+│   │   ├── websocket/                 # STOMP: join/ready/clue/vote/guess
+│   │   ├── service/                   # RoomService, GameService, WordBankService
+│   │   ├── domain/                    # Room, Player, RoundState, RoundPhase, ClueEntry
+│   │   ├── dto/                       # objetos de transporte
 │   │   └── exception/                 # exceções + handler global
-│   ├── src/main/resources/
-│   │   └── application.yml
-│   └── src/test/java/...
+│   └── src/main/resources/
+│       ├── application.yml
+│       └── word-bank.json             # banco de palavras (temas + palavras)
 │
-└── frontend/                         # grash-web (Angular)
+└── frontend/                          # grash-web (Angular)
     ├── angular.json
     ├── package.json
-    ├── src/app/
-    │   ├── core/                      # singletons: services, guards, interceptors, models
-    │   ├── shared/                    # componentes/pipes/diretivas reutilizáveis
-    │   ├── layout/                    # header, footer, shell
-    │   └── features/
-    │       ├── lobby/                 # listar/criar/entrar em salas
-    │       ├── room/                  # sala de espera (chat, jogadores prontos)
-    │       └── game/                  # tela de jogo em si
-    └── src/assets/
+    └── src/app/
+        ├── core/                      # services, models
+        └── features/
+            ├── lobby/                 # criar/entrar em sala
+            ├── room/                  # sala de espera ("pronto")
+            └── game/                  # carta, dicas, votação, revelação, placar
 ```
 
-> Pastas vazias hoje têm um `.gitkeep` só para o Git rastreá-las — serão preenchidas na fase de implementação.
-
 ---
 
-## 4. Stack Tecnológica
+## 3. Stack Tecnológica
 
 ### Backend (Java 21)
-- **Spring Boot 3.3+** — LTS, suporte nativo a Java 21 (virtual threads, records, pattern matching)
-- **Spring Web** — REST (autenticação, CRUD de salas, perfil)
-- **Spring WebSocket + STOMP** — comunicação em tempo real (eventos de jogo, chat de sala)
-- **Spring Data JPA + PostgreSQL** — dados persistentes (usuários, histórico de partidas, ranking)
-- **Redis** (a partir da fase de escala) — estado de salas ativas compartilhado entre instâncias + pub/sub para múltiplos nós do backend
-- **Spring Security + JWT** — autenticação stateless
-- **Maven** — build (mais previsível para times pequenos; Gradle é alternativa válida)
-- **Testcontainers + JUnit 5** — testes de integração
+- **Spring Boot 3.3** — Web (REST), WebSocket + STOMP (tempo real)
+- **Sem banco de dados** — tudo em `ConcurrentHashMap` em memória (ver seção 8)
+- **Jackson** — carrega `word-bank.json` uma vez na subida do servidor
+- **Maven**
 
 ### Frontend (Angular)
-- **Angular 18+** — standalone components, Signals para estado local
-- **RxJS** — streams de eventos WebSocket
+- **Angular 18+** — standalone components, Signals, novo control flow (`@if`/`@for`/`@switch`/`@let`)
 - **@stomp/stompjs + sockjs-client** — cliente STOMP
-- **NgRx (opcional, fase 2)** — estado global se a complexidade justificar (lobby + sala + jogo simultâneos)
-- **Angular Material ou Tailwind** — UI (a definir conforme identidade visual do jogo)
 
-### Infraestrutura (fase posterior)
-- Docker + docker-compose (backend + Postgres + Redis) para dev local
-- CI/CD (GitHub Actions): lint/test/build para `backend/` e `frontend/` com paths-filter (só builda o que mudou)
+### Infraestrutura
+- **Docker** (`backend/Dockerfile`) + **Render** (`render.yaml`) — ver `README.md`
+- Sem Postgres, sem Redis, sem serviço de e-mail — nada disso é necessário (sem contas de usuário)
 
 ---
 
-## 5. Fluxo de Comunicação
+## 4. Fluxo de Comunicação
 
 ```mermaid
 sequenceDiagram
-    participant P1 as Jogador 1 (Angular)
+    participant P1 as Jogador 1
     participant API as Backend REST
     participant WS as Backend WebSocket (STOMP)
-    participant P2 as Jogador 2 (Angular)
+    participant P2 as Jogador 2
+    participant P3 as Jogador 3
 
-    P1->>API: POST /api/rooms (criar sala)
-    API-->>P1: { roomId, roomCode }
-    P1->>WS: CONNECT + SUBSCRIBE /topic/rooms/{roomId}
-    P2->>API: POST /api/rooms/{roomCode}/join
-    API-->>P2: { roomId }
-    P2->>WS: CONNECT + SUBSCRIBE /topic/rooms/{roomId}
-    WS-->>P1: evento "player_joined"
-    P1->>WS: SEND /app/rooms/{roomId}/ready
-    WS-->>P2: evento "player_ready"
-    Note over WS: quando todos prontos, servidor inicia o jogo
-    WS-->>P1: evento "game_started"
-    WS-->>P2: evento "game_started"
+    P1->>API: POST /api/rooms (criar sala, escolhe tema ou "Aleatório")
+    API-->>P1: { roomId, code, fixedTheme }
+    P2->>API: POST /api/rooms/{code}/join
+    P3->>API: POST /api/rooms/{code}/join
+    P1->>WS: CONNECT + SUBSCRIBE /topic/rooms/{id}, /topic/rooms/{id}/game, /user/queue/card
+    P2->>WS: idem
+    P3->>WS: idem
+    P1->>WS: SEND /app/rooms/{id}/ready
+    P2->>WS: SEND /app/rooms/{id}/ready
+    P3->>WS: SEND /app/rooms/{id}/ready
+    Note over WS: todos prontos (mínimo 3) -> sorteia (ou usa o tema fixo) + palavra/impostor/ordem
+    WS-->>P1: /user/queue/card (privado: palavra OU "Impostor")
+    WS-->>P2: /user/queue/card (privado)
+    WS-->>P3: /user/queue/card (privado)
+    WS-->>P1: /topic/rooms/{id}/game (público: tema, ordem de turno, fase)
+    loop 3 voltas de dicas
+        WS->>WS: jogador da vez SEND /app/rooms/{id}/clue
+        WS-->>P1: broadcast atualizado
+    end
+    Note over WS: fase VOTING — o Impostor não vota
+    P1->>WS: SEND /app/rooms/{id}/vote (anônimo pros outros jogadores)
+    P2->>WS: SEND /app/rooms/{id}/vote
+    Note over P3: P3 é o Impostor
+    P3->>WS: SEND /app/rooms/{id}/guess (palpite da palavra secreta)
+    Note over WS: todos votaram E o Impostor deu o palpite -> revela e pontua
+    WS-->>P1: /topic/rooms/{id}/game (fase REVEAL: impostorId, secretWord, impostorGuess, deltas)
+    Note over WS: pausa de 8s, repete até a rodada 10
 ```
 
-- **REST**: operações pontuais (criar sala, entrar por código, listar salas públicas, autenticação, perfil).
-- **WebSocket/STOMP**: tudo que é tempo real (estado da sala, jogadas, chat, sincronização de jogo).
+- **REST**: só criar sala / entrar por código / consultar sala.
+- **WebSocket/STOMP**: todo o resto (pronto, dicas, votos, estado da rodada).
 
 ---
 
-## 6. Modelo de Domínio Inicial
+## 5. Modelo de Domínio
 
 ```
 Player
- ├─ id, nickname, (userId se autenticado)
- └─ status: ONLINE | IN_ROOM | IN_GAME
+ ├─ id, nickname, status (WAITING | READY)
+ └─ score (acumulado nas 10 rodadas)
 
 Room
- ├─ id, code (para convite), name, isPrivate
- ├─ players: List<Player> (com limite configurável)
+ ├─ id, code (convite), ownerId
+ ├─ fixedTheme: tema escolhido na criação (null = sorteia um tema novo por rodada)
+ ├─ players: Map<id, Player>
  ├─ status: WAITING | IN_PROGRESS | FINISHED
- └─ ownerId
+ └─ currentRound: RoundState (null até o jogo começar)
 
-GameSession
- ├─ roomId
- ├─ estado do jogo (regras específicas do jogo escolhido)
- └─ histórico de jogadas
+RoundState (uma das 10 rodadas)
+ ├─ roundNumber, theme, secretWord, impostorId   ← nunca vai no broadcast público
+ ├─ turnOrder: List<playerId>                    (sorteado a cada rodada)
+ ├─ phase: CLUE_GIVING | VOTING | REVEAL
+ ├─ clues: List<ClueEntry> (playerId, lap, texto)
+ ├─ votes: Map<voterId, votedForId>              (impostor não vota, não aparece aqui)
+ └─ impostorGuess, impostorGuessedCorrectly       (palpite do Impostor sobre a palavra)
 ```
 
-> O "jogo" em si (regras, tabuleiro, pontuação) ainda não foi definido — a arquitetura acima é agnóstica ao jogo específico, então esse é o próximo ponto a esclarecer.
+---
+
+## 6. Banco de palavras
+
+`word-bank.json` (em `backend/src/main/resources/`) — um mapa `{ "Tema": ["palavra1", "palavra2", ...] }`,
+carregado uma única vez na subida do servidor pra um `Map` em memória
+(`WordBankService`). Sorteio de tema+palavra é O(1); zero I/O em disco ou
+banco durante o jogo.
+
+**Por que esse formato**: sem banco de dados no projeto, um arquivo
+versionado no próprio repositório é a forma mais simples de manter um
+conteúdo que muda pouco e precisa carregar rápido. Editar/adicionar temas é
+só editar o JSON — não exige migração nem deploy de schema.
+
+Temas atuais (8, cada um com bem mais de 50 palavras):
+
+| Tema | Palavras |
+|---|---|
+| League of Legends | 148 (campeões) |
+| Profissões | 78 |
+| Animais | 73 |
+| Frutas | 59 |
+| Países | 62 |
+| Esportes | 55 |
+| Instrumentos Musicais | 58 |
+| Objetos do Dia a Dia | 62 |
 
 ---
 
-## 7. Segurança (fase inicial)
+## 7. Regras do jogo (decisões de implementação)
 
-- Autenticação simples por nickname/sessão para MVP, evoluindo para JWT + refresh token.
-- Validação de entrada em todos os endpoints REST e nos handlers STOMP (nunca confiar no client para regras de jogo).
-- Rate limiting básico em criação de salas para evitar spam.
-- CORS restrito ao domínio do frontend.
+O pedido original deixava algumas regras implícitas — as decisões abaixo
+preenchem essas lacunas:
+
+1. **Mínimo de 3 jogadores** para iniciar — com 2, a votação seria trivial
+   (o não-impostor saberia de cara quem é o outro).
+2. **Sorteio do impostor com rotação justa**: em vez de sortear 100%
+   independente a cada uma das 10 rodadas (o que poderia deixar alguém
+   nunca ser impostor, ou ser impostor toda hora só por azar), o servidor
+   embaralha a lista de jogadores e consome em ordem; ao "dar a volta" (ou
+   se o grupo de jogadores mudar), embaralha de novo. Isso distribui o
+   papel o mais igualmente possível ao longo do jogo. Ver
+   `GameService.pickImpostor`.
+3. **Tema fixo ou aleatório**: quem cria a sala escolhe um tema específico
+   (fica valendo pras 10 rodadas do jogo) ou "Aleatório" (sorteia um tema
+   novo a cada rodada, como antes). Ver `Room.fixedTheme` e
+   `RoomService.createRoom`.
+4. **O impostor não vota** — na fase `VOTING`, os demais jogadores votam
+   anonimamente em quem acham que é o Impostor, e, em paralelo, o próprio
+   Impostor tenta adivinhar a palavra secreta da rodada (campo separado,
+   `impostorGuess`). A rodada só avança pra `REVEAL` quando **todos os
+   não-impostores votaram E o Impostor enviou um palpite**. Ver
+   `GameService.submitVote` / `submitImpostorGuess` / `checkVotingComplete`.
+5. **Comparação do palpite**: tanto a palavra secreta quanto o palpite do
+   Impostor são normalizados antes de comparar — remove todo caractere que
+   não seja letra/dígito (inclusive espaços) e converte pra maiúsculas
+   (`s.replaceAll("[^\\p{L}\\p{N}]", "").toUpperCase()`). Se o resultado for
+   igual, o palpite conta como certo. Ver `GameService.wordsMatch`.
+6. **Pontuação**:
+   - Cada jogador não-impostor que vota corretamente no Impostor ganha
+     **1 ponto** (`CORRECT_VOTE_POINTS`) — **a menos que** o Impostor tenha
+     acertado a palavra (ver abaixo), caso em que ninguém ganha ponto por
+     voto, nem quem votou certo.
+   - Cada jogador não-impostor que vota errado dá **2 pontos** ao Impostor
+     (`WRONG_VOTE_IMPOSTOR_POINTS`) — então o Impostor pode ganhar vários
+     pontos por votos errados numa rodada só, independente do palpite.
+   - Se o Impostor acerta a palavra secreta, ganha um bônus de **3 pontos**
+     (`IMPOSTOR_CORRECT_GUESS_BONUS`) **e** anula os pontos que os votantes
+     corretos ganhariam naquela rodada (o Impostor "sai vencedor" da
+     rodada). Os pontos de voto errado (item acima) continuam valendo
+     normalmente pro Impostor mesmo quando ele acerta.
+   - Mensagem mostrada a todos na revelação: se o Impostor acertou, "*(nome)
+     acertou a palavra!*"; se errou, "*(nome) chutou: (palpite)*". Ver
+     `GameStateMessage` (`impostorGuessedCorrectly`, `impostorGuess`,
+     `secretWord`) e `GameService.revealAndScore`.
+7. **Empate por posição**: se dois jogadores terminam com a mesma pontuação
+   máxima, os dois são mostrados como vencedores na tela final.
+8. **Avanço automático de rodada**: depois da revelação, uma pausa de 8s
+   (`GameConstants.REVEAL_DURATION_SECONDS`) e a próxima rodada começa
+   sozinha — sem precisar de clique/confirmação de ninguém.
 
 ---
 
-## 8. Escalabilidade (quando necessário, não no MVP)
+## 8. Segurança da informação: como a carta privada funciona
 
-- Estado de sala hoje pode viver em memória (`ConcurrentHashMap`) — simples e suficiente para 1 instância.
-- Ao escalar horizontalmente, migrar estado de sala para **Redis** + usar **Redis Pub/Sub** ou **Spring Cloud Bus** para que instâncias do backend sincronizem eventos de sala entre si (um jogador pode estar conectado a uma instância diferente da do outro jogador da mesma sala).
-- Virtual Threads (Java 21) ajudam a lidar com muitas conexões WebSocket simultâneas sem esgotar thread pool.
+O requisito mais delicado tecnicamente: cada jogador precisa ver uma carta
+diferente (a palavra, ou "Impostor") sem que ninguém mais veja a dele — e
+o projeto não tem login, então não dá pra usar autenticação pra endereçar
+mensagens privadas do jeito "tradicional" do Spring.
 
----
+Solução: STOMP suporta enviar mensagem pra uma **sessão específica**, sem
+precisar de um usuário autenticado — usando o `sessionId` da conexão
+WebSocket no lugar de um "usuário":
 
-## 9. Boas Práticas Aplicadas
+```java
+SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
+headerAccessor.setSessionId(sessionId);
+headerAccessor.setLeaveMutable(true);
+messagingTemplate.convertAndSendToUser(sessionId, "/queue/card", payload, headerAccessor.getMessageHeaders());
+```
 
-- Separação em camadas (`controller` → `service` → `repository`), sem lógica de negócio no controller.
-- DTOs para nunca expor entidades JPA diretamente na API.
-- Testes: unitários (service) + integração (Testcontainers com Postgres real).
-- Convenções: `feature/`, `fix/`, `chore/` para branches; Conventional Commits para mensagens de commit.
-- `.gitignore` já cobre `target/`, `node_modules/`, `.idea/`, `.env`, builds e o arquivo local que você pediu para ignorar.
+O cliente assina `/user/queue/card` normalmente — o `UserDestinationMessageHandler`
+do Spring entrega só pra aquela sessão específica, mesmo sem login. Ver
+`GameService.sendPrivate` e `WebSocketSessionRegistry` (mapeia
+`playerId -> sessionId` pra saber pra quem endereçar).
 
----
-
-## 10. Roadmap Sugerido
-
-1. **Fase 0**: esqueleto + arquitetura (este documento) ✅
-2. **Fase 1 — MVP** ✅: criar/entrar em sala por código, lobby, sala de espera
-   com "pronto", WebSocket/STOMP, arena de movimento em tempo real
-   funcionando fim a fim. **Falta**: definir as regras específicas do jogo
-   em cima da arena (colisão, objetivo, pontuação).
-3. **Fase 2**: autenticação real (JWT) se necessário, persistência de
-   partidas, reconexão em caso de queda de conexão.
-4. **Fase 3**: escalabilidade (Redis para estado de sala compartilhado entre
-   instâncias), matchmaking, ranking/histórico.
-5. **Fase 4**: deploy (Docker + CI/CD), monitoramento.
+O broadcast público (`/topic/rooms/{id}/game`) nunca contém `secretWord`
+nem `impostorId` antes da fase `REVEAL` — validado em teste (ver histórico
+de testes desta sessão).
 
 ---
 
-## 11. Decisões tomadas (destravaram a implementação do MVP)
+## 9. Escalabilidade (quando necessário, não no MVP)
 
-1. **Jogo**: ação em tempo real — MVP genérico de arena 2D (jogadores se
-   movem com WASD/setas, servidor autoritativo sincroniza posições ~20x/s).
-   As regras específicas do jogo (colisão, objetivo, pontuação) ainda **não**
-   foram definidas — é o próximo ponto a evoluir em cima desse esqueleto.
-2. **Salas**: só privadas por código de 6 caracteres (sem lista pública),
-   máximo de 8 jogadores por sala (`Room.MAX_PLAYERS`).
-3. **Autenticação**: nickname temporário, sem conta — sessão vive em
-   `sessionStorage` do navegador (some ao fechar a aba). Evolui para JWT
-   depois, se necessário.
-4. **Banco de dados**: nenhum ainda. Todo o estado (salas, jogadores,
-   posições) vive em memória no processo do backend (`ConcurrentHashMap`) —
-   reiniciar o servidor apaga todas as salas ativas. Persistência entra na
-   Fase 2/3 do roadmap se fizer sentido (histórico, ranking).
-5. **Hospedagem**: ainda em aberto — não bloqueia o MVP local.
+Tudo — salas, jogadores, rodadas — vive em memória numa única instância do
+backend (`ConcurrentHashMap`). Reiniciar o servidor apaga as salas ativas;
+rodar múltiplas instâncias exigiria mover esse estado pra um backplane
+compartilhado (Redis) e sincronizar o broker STOMP entre instâncias — não
+vale a pena para o estágio atual do projeto.
 
-## 12. Limitações conhecidas do MVP atual
+---
 
-- Sem reconexão: se a conexão websocket cair, o jogador não volta
-  automaticamente para a sala/jogo (precisa recarregar e reentrar).
-- Sem tela de "fim de jogo" — a arena roda indefinidamente, sem
-  regra de vitória/pontuação (o "jogo" em si ainda não foi definido).
-- Sem testes automatizados ainda.
-- Estado em memória não sobrevive a reinício do processo nem escala para
-  múltiplas instâncias (ver seção 8).
+## 10. Limitações conhecidas do MVP atual
+
+- Sem reconexão: se a conexão websocket cair no meio de uma rodada, o
+  jogador não volta automaticamente (precisa recarregar e reentrar) — e o
+  jogo pode ficar esperando a dica/voto dele indefinidamente.
+- Sem moderação de conteúdo das dicas (texto livre) — dá pra digitar
+  qualquer coisa, inclusive a própria palavra secreta sem o servidor
+  impedir.
+- Sem testes automatizados no repositório (foram feitos testes manuais
+  extensivos via script durante o desenvolvimento, não commitados).
+- Rate limiting não existe (não tem mais superfície de abuso tipo
+  login/registro depois da remoção de contas).
+- Estado 100% em memória — reiniciar o backend apaga todas as salas.
+
+---
+
+## 11. Roadmap sugerido
+
+1. **Fase 0**: esqueleto + arquitetura ✅
+2. **Fase 1**: salas em tempo real (código, lobby, pronto) ✅
+3. **Fase 2**: jogo do Impostor completo (10 rodadas, dicas, votação, pontuação) ✅
+4. **Fase 3 (ideias futuras)**: reconexão, moderação básica de dicas, mais
+   temas no banco de palavras, histórico de partidas (exigiria voltar a
+   pensar em persistência), suporte a mais de 8 jogadores por sala.

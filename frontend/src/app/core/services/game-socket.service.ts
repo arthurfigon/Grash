@@ -3,22 +3,26 @@ import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { environment } from '../../../environments/environment';
 import { RoomState } from '../models/room.model';
-import { GameStateMessage, PlayerInput } from '../models/game.model';
+import { GameState, PrivateCard } from '../models/game.model';
 
 /**
  * Uma conexão STOMP por sessão de jogo. O componente de sala/jogo chama
  * connect() ao entrar e disconnect() ao sair (ngOnDestroy) — não é mantida
  * viva entre rotas porque o MVP assume um jogador em uma sala por vez.
+ *
+ * A carta privada (/user/queue/card) chega só pra essa sessão — o servidor
+ * endereça pelo sessionId do STOMP, sem precisar de login (ver
+ * GameService.sendPrivate no backend).
  */
 @Injectable({ providedIn: 'root' })
 export class GameSocketService {
   readonly roomState = signal<RoomState | null>(null);
-  readonly gameState = signal<GameStateMessage | null>(null);
+  readonly gameState = signal<GameState | null>(null);
+  readonly myCard = signal<PrivateCard | null>(null);
   readonly connected = signal(false);
 
   private client: Client | null = null;
-  private roomSub: StompSubscription | null = null;
-  private gameSub: StompSubscription | null = null;
+  private subscriptions: StompSubscription[] = [];
   private roomId: string | null = null;
 
   connect(roomId: string, playerId: string): Promise<void> {
@@ -31,13 +35,17 @@ export class GameSocketService {
         onConnect: () => {
           this.connected.set(true);
 
-          this.roomSub = client.subscribe(`/topic/rooms/${roomId}`, (message: IMessage) => {
-            this.roomState.set(JSON.parse(message.body) as RoomState);
-          });
-
-          this.gameSub = client.subscribe(`/topic/rooms/${roomId}/game`, (message: IMessage) => {
-            this.gameState.set(JSON.parse(message.body) as GameStateMessage);
-          });
+          this.subscriptions.push(
+            client.subscribe(`/topic/rooms/${roomId}`, (message: IMessage) => {
+              this.roomState.set(JSON.parse(message.body) as RoomState);
+            }),
+            client.subscribe(`/topic/rooms/${roomId}/game`, (message: IMessage) => {
+              this.gameState.set(JSON.parse(message.body) as GameState);
+            }),
+            client.subscribe('/user/queue/card', (message: IMessage) => {
+              this.myCard.set(JSON.parse(message.body) as PrivateCard);
+            })
+          );
 
           client.publish({
             destination: `/app/rooms/${roomId}/join`,
@@ -58,18 +66,27 @@ export class GameSocketService {
     this.publish(`/app/rooms/${this.roomId}/ready`, { playerId, ready });
   }
 
-  sendInput(input: PlayerInput): void {
-    this.publish(`/app/rooms/${this.roomId}/input`, input);
+  sendClue(playerId: string, text: string): void {
+    this.publish(`/app/rooms/${this.roomId}/clue`, { playerId, text });
+  }
+
+  sendVote(playerId: string, votedForId: string): void {
+    this.publish(`/app/rooms/${this.roomId}/vote`, { playerId, votedForId });
+  }
+
+  sendGuess(playerId: string, guess: string): void {
+    this.publish(`/app/rooms/${this.roomId}/guess`, { playerId, guess });
   }
 
   disconnect(): void {
-    this.roomSub?.unsubscribe();
-    this.gameSub?.unsubscribe();
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
+    this.subscriptions = [];
     this.client?.deactivate();
     this.client = null;
     this.roomId = null;
     this.roomState.set(null);
     this.gameState.set(null);
+    this.myCard.set(null);
     this.connected.set(false);
   }
 

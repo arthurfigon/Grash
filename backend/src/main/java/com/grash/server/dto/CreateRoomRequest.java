@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Size;
 public record CreateRoomRequest(
         @NotBlank(message = "nickname é obrigatório")
         @Size(min = 2, max = 20, message = "nickname deve ter entre 2 e 20 caracteres")
-        String nickname
+        String nickname,
+
+        /** Tema fixo pro jogo inteiro; null/vazio = sorteia um tema novo a cada rodada. */
+        String theme
 ) {
 }

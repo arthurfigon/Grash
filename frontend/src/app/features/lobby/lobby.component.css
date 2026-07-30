@@ -25,7 +25,8 @@ label {
   color: #9a9ab0;
 }
 
-input {
+input,
+select {
   padding: 0.6rem 0.75rem;
   border-radius: 8px;
   border: 1px solid #33334a;
