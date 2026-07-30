@@ -9,14 +9,11 @@ dados (tudo em memória) e sem login (nickname temporário).
 
 ## Pré-requisitos
 
-- **Java 21** (verificado neste ambiente: ✅ já instalado)
-- **Maven 3.9+** — `mvn -v` para conferir. Se não tiver, instale com
+- **Java 21** — `java -version`
+- **Maven 3.9+** — `mvn -v`. Se não tiver, instale com
   `winget install Apache.Maven` (ou baixe em https://maven.apache.org)
-- **Node.js 20+ e npm** — `node -v` / `npm -v` para conferir. Se não tiver,
+- **Node.js 20+ e npm** — `node -v` / `npm -v`. Se não tiver,
   instale com `winget install OpenJS.NodeJS.LTS` (ou baixe em https://nodejs.org)
-
-> Neste ambiente, apenas o Java 21 estava disponível — Maven, Node e npm
-> precisam ser instalados antes de rodar os passos abaixo.
 
 ## Rodando o backend
 
@@ -49,14 +46,47 @@ Abra `http://localhost:4200` em duas abas (ou uma normal + uma anônima, já que
 usa `sessionStorage` por aba): crie uma sala em uma aba, entre com o código gerado na outra,
 marque "pronto" nas duas e a arena de jogo abre automaticamente para ambas.
 
-## Publicando no GitHub
+## Deploy online (Render)
 
-```powershell
-cd "c:\Users\arthu\Documents\Projetos\Game\Grash"
-git init
-git add .
-git commit -m "chore: MVP inicial (salas + tempo real)"
-git remote add origin <URL_DO_REPOSITORIO>
-git branch -M main
-git push -u origin main
-```
+O repositório já vem com tudo pronto pra publicar no [Render](https://render.com): backend
+como serviço Docker, frontend como site estático, conectados via `render.yaml` na raiz.
+
+### Passo a passo (Blueprint — recomendado)
+
+1. Crie uma conta em https://render.com (dá pra logar direto com a conta do GitHub).
+2. No dashboard, **New > Blueprint**, selecione o repositório `arthurfigon/Grash`. A Render
+   lê o `render.yaml` da raiz e propõe os dois serviços automaticamente:
+   - `grash-backend` (Docker, usa `backend/Dockerfile`)
+   - `grash-frontend` (site estático, builda `frontend/` com `npm run build`)
+3. Clique em **Apply**. A primeira build do backend demora alguns minutos (baixa
+   dependências Maven do zero); o frontend é rápido.
+4. Quando os dois estiverem no ar, as URLs públicas serão
+   `https://grash-backend.onrender.com` e `https://grash-frontend.onrender.com`
+   (exatamente os nomes usados nas envVars do `render.yaml` — é assim que os dois se
+   encontram: o front já builda apontando pro back, e o back já libera CORS pro front).
+
+> **Se o nome `grash-backend` ou `grash-frontend` já estiver em uso** (o subdomínio
+> `.onrender.com` é global), a Render vai pedir outro nome. Nesse caso, edite o
+> `render.yaml`: troque o nome do serviço e ajuste as `envVars` do *outro* serviço pra
+> apontar pra URL nova (`GRASH_CORS_ALLOWED_ORIGINS` no backend, `API_URL`/`WS_URL` no
+> frontend) antes de fazer o Apply de novo.
+
+### Alternativa: criar os serviços manualmente
+
+Se preferir não usar o Blueprint (ou usar outra plataforma tipo Railway/Fly.io, que também
+leem Dockerfile):
+
+- **Backend**: serviço Docker, root `backend/`, Dockerfile em `backend/Dockerfile`. Defina a
+  env var `GRASH_CORS_ALLOWED_ORIGINS` com a URL pública do frontend (pode ter mais de uma,
+  separadas por vírgula). `PORT` é injetada automaticamente pela plataforma.
+- **Frontend**: site estático, root `frontend/`, build command `npm install && npm run build`,
+  publish directory `dist/grash-frontend/browser`. Defina `API_URL` e `WS_URL` apontando pra
+  URL pública do backend (ex.: `https://seu-backend.onrender.com/api` e `.../ws`) — o script
+  `scripts/set-env.js` lê essas env vars no build e gera `environment.ts`. Como é SPA, configure
+  um rewrite de `/*` para `/index.html` (senão recarregar `/rooms/ABC123` dá 404).
+
+### Limitação a saber
+
+O estado das salas ainda vive em memória (ver `ARCHITECTURE.md`) — reiniciar o serviço do
+backend (deploy novo, restart, ou o plano free "dormindo" por inatividade) apaga as salas
+ativas. Suficiente para mostrar o MVP; migrar pra Redis é o próximo passo se isso incomodar.
