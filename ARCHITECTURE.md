@@ -1,6 +1,10 @@
 # Grash — Arquitetura do Projeto
 
-Documento para avaliação de viabilidade. Nenhuma linha de código de aplicação foi escrita ainda — apenas o esqueleto de pastas e as decisões de arquitetura propostas abaixo.
+> **Status:** Fase 1 (MVP) implementada — salas privadas por código, lobby,
+> sala de espera com "pronto" e uma tela de jogo em tempo real funcional
+> (jogadores se movem em uma arena 2D, sincronizados via WebSocket). Ver
+> seção 11 para as decisões que destravaram essa implementação e `README.md`
+> para como rodar.
 
 ---
 
@@ -177,18 +181,42 @@ GameSession
 
 ## 10. Roadmap Sugerido
 
-1. **Fase 0 (atual)**: esqueleto + arquitetura (este documento) ✅
-2. **Fase 1 — MVP**: criar/entrar em sala, lobby, WebSocket básico, 1 jogo simples funcionando fim a fim
-3. **Fase 2**: autenticação real (JWT), persistência de partidas, reconexão em caso de queda
-4. **Fase 3**: escalabilidade (Redis), matchmaking, ranking/histórico
-5. **Fase 4**: deploy (Docker + CI/CD), monitoramento
+1. **Fase 0**: esqueleto + arquitetura (este documento) ✅
+2. **Fase 1 — MVP** ✅: criar/entrar em sala por código, lobby, sala de espera
+   com "pronto", WebSocket/STOMP, arena de movimento em tempo real
+   funcionando fim a fim. **Falta**: definir as regras específicas do jogo
+   em cima da arena (colisão, objetivo, pontuação).
+3. **Fase 2**: autenticação real (JWT) se necessário, persistência de
+   partidas, reconexão em caso de queda de conexão.
+4. **Fase 3**: escalabilidade (Redis para estado de sala compartilhado entre
+   instâncias), matchmaking, ranking/histórico.
+5. **Fase 4**: deploy (Docker + CI/CD), monitoramento.
 
 ---
 
-## 11. Perguntas em Aberto (preciso da sua decisão antes de codar)
+## 11. Decisões tomadas (destravaram a implementação do MVP)
 
-1. Qual é o jogo em si? (regras específicas mudam bastante o `domain/` e o `game/` do front)
-2. Quantos jogadores por sala? Salas públicas e privadas, ou só privadas com código?
-3. Precisa de contas persistentes (login) desde o MVP, ou nickname temporário já resolve?
-4. Tem preferência de banco (Postgres é a sugestão) ou já usa algo?
-5. Onde pretende hospedar (isso influencia decisões de Docker/CI)?
+1. **Jogo**: ação em tempo real — MVP genérico de arena 2D (jogadores se
+   movem com WASD/setas, servidor autoritativo sincroniza posições ~20x/s).
+   As regras específicas do jogo (colisão, objetivo, pontuação) ainda **não**
+   foram definidas — é o próximo ponto a evoluir em cima desse esqueleto.
+2. **Salas**: só privadas por código de 6 caracteres (sem lista pública),
+   máximo de 8 jogadores por sala (`Room.MAX_PLAYERS`).
+3. **Autenticação**: nickname temporário, sem conta — sessão vive em
+   `sessionStorage` do navegador (some ao fechar a aba). Evolui para JWT
+   depois, se necessário.
+4. **Banco de dados**: nenhum ainda. Todo o estado (salas, jogadores,
+   posições) vive em memória no processo do backend (`ConcurrentHashMap`) —
+   reiniciar o servidor apaga todas as salas ativas. Persistência entra na
+   Fase 2/3 do roadmap se fizer sentido (histórico, ranking).
+5. **Hospedagem**: ainda em aberto — não bloqueia o MVP local.
+
+## 12. Limitações conhecidas do MVP atual
+
+- Sem reconexão: se a conexão websocket cair, o jogador não volta
+  automaticamente para a sala/jogo (precisa recarregar e reentrar).
+- Sem tela de "fim de jogo" — a arena roda indefinidamente, sem
+  regra de vitória/pontuação (o "jogo" em si ainda não foi definido).
+- Sem testes automatizados ainda.
+- Estado em memória não sobrevive a reinício do processo nem escala para
+  múltiplas instâncias (ver seção 8).

@@ -1,0 +1,32 @@
+<div class="room">
+  @if (room(); as r) {
+    <header>
+      <h1>Sala {{ r.code }}</h1>
+      <button class="copy" (click)="copyCode()">Copiar código</button>
+    </header>
+
+    <ul class="players">
+      @for (player of r.players; track player.id) {
+        <li [class.ready]="player.status === 'READY'">
+          <span class="name">{{ player.nickname }}</span>
+          @if (player.id === r.ownerId) {
+            <span class="badge owner">dono</span>
+          }
+          <span class="badge status">{{ player.status === 'READY' ? 'pronto' : 'aguardando' }}</span>
+        </li>
+      }
+    </ul>
+
+    @if (!canStart()) {
+      <p class="hint">Aguardando pelo menos mais um jogador entrar com o código acima.</p>
+    }
+
+    <button class="ready-btn" [class.active]="isReady()" (click)="toggleReady()">
+      {{ isReady() ? 'Cancelar pronto' : 'Estou pronto' }}
+    </button>
+
+    <button class="disconnect-btn" (click)="disconnect()">Desconectar</button>
+  } @else {
+    <p>Conectando à sala…</p>
+  }
+</div>
